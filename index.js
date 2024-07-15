@@ -39,7 +39,7 @@ const unknownEndpoint = (request, response) => {
 }
 
 app.get('/', (request, response) => {
-  response.send('<h1>Hello World!</h1>')
+  response.send('<h1>Hello Greg!</h1>')
 })
 
 app.get('/api/notes', (request, response) => {
