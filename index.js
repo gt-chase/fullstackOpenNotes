@@ -1,5 +1,7 @@
+require('dotenv').config()
 const express = require('express')
 const app = express()
+const Note = require('./models/note')
 const cors = require('cors')
 
 app.use(cors())
@@ -42,53 +44,35 @@ app.get('/', (request, response) => {
   response.send('<h1>Hello Greg!</h1>')
 })
 
+
 app.get('/api/notes', (request, response) => {
-  response.json(notes)
+  Note.find({}).then(notes => {
+    response.json(notes)
+  })
 })
 
-// app.get('/api/notes/:id', (request, response) => {
-//   const id = request.params.id
-//   console.log(`checking updates?`)
-//   const note = notes.find(note => note.id === id)
-//   response.json(note)
-// })
-
+// mongoose's `findById` method
 app.get('/api/notes/:id', (request, response) => {
-  const id = Number(request.params.id)
-  const note = notes.find(note => note.id === id)
-  if (note) {
+  Note.findById(request.params.id).then(note => {
     response.json(note)
-  } else {
-    response.status(404).end()
-  }
+  })
 })
 
 app.post('/api/notes', (request, response) => {
   const body = request.body
-  
-  //This method is not recommended, but we will live with it for now as we will replace it soon enough.
-  const generateId = () => {
-    const maxId = notes.length > 0
-      ? Math.max(...notes.map(n => Number(n.id)))
-      : 0
-    return String(maxId + 1)
+
+  if (body.content === undefined) {
+    return response.status(400).json({ error: 'content missing' })
   }
 
-  if (!body.content) {
-    return response.status(400).json({ 
-      error: 'content missing' 
-    })
-  }
-
-  const note = {
+  const note = new Note({
     content: body.content,
-    important: Boolean(body.important) || false,
-    id: generateId(),
-  }
-  
-  notes = notes.concat(note)
+    important: body.important || false,
+  })
 
-  response.json(note)
+  note.save().then(savedNote => {
+    response.json(savedNote)
+  })
 })
 
 // Do I need to change id to a number here too?
@@ -99,9 +83,14 @@ app.delete('/api/notes/:id', (request, response) => {
   response.status(204).end()
 })
 
+
+
 app.use(unknownEndpoint)
 
-const PORT = process.env.PORT || 3001
+// PORT before using db
+// const PORT = process.env.PORT || 3001
+
+const PORT = process.env.PORT
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
